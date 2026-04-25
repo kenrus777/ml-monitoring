@@ -1,7 +1,6 @@
 """
 Synthetic Data Seeder
-Generates 30 days of monitoring data with drift starting at day 14.
-Run: python -m app.core.seed_data
+Run: python backend/app/core/seed_data.py
 """
 import numpy as np
 import pandas as pd
@@ -10,8 +9,8 @@ import uuid
 import os
 from pathlib import Path
 
-# Data directory: use /app/data in Docker, or project root /data locally
-DATA_DIR = Path(os.environ.get('DATA_DIR', '/app/data'))
+# DATA_DIR env var lets us override at runtime
+DATA_DIR = Path(os.environ.get('DATA_DIR', './data'))
 
 
 def generate_reference_data(n=10000, seed=42):
@@ -40,16 +39,22 @@ def generate_production_data(n_days=30, samples_per_day=500, drift_start_day=14,
         ts_base = base_date + timedelta(days=day)
         df = max(0, (day - drift_start_day) / (n_days - drift_start_day))
         for _ in range(samples_per_day):
-            ts = ts_base + timedelta(hours=rng.randint(0, 24), minutes=rng.randint(0, 60))
+            ts = ts_base + timedelta(
+                hours=int(rng.randint(0, 24)),
+                minutes=int(rng.randint(0, 60))
+            )
             score = float(np.clip(rng.beta(1.2, 8) + df * rng.normal(0, 0.05), 0, 1))
             has_label = day < (n_days - 14)
             records.append({
-                "record_id": str(uuid.uuid4()), "timestamp": ts.isoformat(), "day": day,
+                "record_id": str(uuid.uuid4()),
+                "timestamp": ts.isoformat(),
+                "day": day,
                 "amount": round(float(rng.lognormal(4.5 + df * 0.8, 1.2 + df * 0.3)), 2),
                 "amount_zscore": float(rng.normal(df * 0.5, 1)),
                 "txn_count_1h": float(rng.poisson(2.1)),
                 "txn_count_24h": float(rng.poisson(8.5 + df * 3)),
-                "hour_of_day": float(ts.hour), "is_weekend": float(ts.weekday() >= 5),
+                "hour_of_day": float(ts.hour),
+                "is_weekend": float(ts.weekday() >= 5),
                 "is_online": float(rng.binomial(1, min(0.35 + df * 0.3, 0.95))),
                 "is_foreign": float(rng.binomial(1, min(0.08 + df * 0.12, 0.5))),
                 "merchant_risk": float(rng.beta(1.5, 20)),
@@ -66,16 +71,19 @@ def generate_production_data(n_days=30, samples_per_day=500, drift_start_day=14,
 
 def seed_all():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Data directory: {DATA_DIR}")
+    print(f"Seeding data to: {DATA_DIR.resolve()}")
+
     print("Generating reference data (10,000 samples)...")
     ref = generate_reference_data(10000)
     ref.to_parquet(DATA_DIR / "reference.parquet", index=False)
-    print(f"  ✅ reference.parquet ({len(ref)} rows)")
-    print("Generating 30-day production data (drift at day 14)...")
+    print(f"  Done: {len(ref)} rows")
+
+    print("Generating 30-day production data...")
     prod = pd.DataFrame(generate_production_data())
     prod.to_parquet(DATA_DIR / "production.parquet", index=False)
-    print(f"  ✅ production.parquet ({len(prod)} rows)")
-    print("\n✅ Done! Run: uvicorn app.main:app --reload")
+    print(f"  Done: {len(prod)} rows")
+
+    print("\nDone!")
 
 
 if __name__ == "__main__":
