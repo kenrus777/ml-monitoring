@@ -2,15 +2,11 @@ services:
   - type: web
     name: ml-monitoring-api
     runtime: python
-    buildCommand: pip install -r backend/requirements.txt && python backend/app/core/seed_data.py
+    buildCommand: pip install -r backend/requirements.txt && cd backend && python app/core/seed_data.py
     startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATA_DIR
-        value: ./data
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
+        value: /opt/render/project/src/data
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend
     healthCheckPath: /health

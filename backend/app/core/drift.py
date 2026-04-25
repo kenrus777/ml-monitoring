@@ -1,10 +1,4 @@
-"""
-Drift Detection Engine
-======================
-PSI + KS Test + Jensen-Shannon divergence per feature.
-Interview: PSI is finance-standard, interpretable, single number per feature.
-Thresholds: PSI 0.1-0.2 = warning, >0.2 = retrain.
-"""
+"""Drift Detection Engine - PSI + KS + Jensen-Shannon"""
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -25,11 +19,6 @@ class DriftConfig:
 
 
 class DriftDetector:
-    """
-    Computes drift between reference (training) and production data.
-    Interview: In production replace with Feature Store (Feast/Tecton)
-    to guarantee train/serve feature consistency.
-    """
     def __init__(self, reference_data, feature_columns, categorical_columns=None, config=None):
         self.reference = reference_data
         self.features = feature_columns
