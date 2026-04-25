@@ -1,13 +1,17 @@
 """
-Synthetic Data Seeder — generates 30 days of monitoring data with drift at day 14.
-Story: stable model → Black Friday → transaction patterns shift → drift detected.
+Synthetic Data Seeder
+Generates 30 days of monitoring data with drift starting at day 14.
 Run: python -m app.core.seed_data
 """
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 import uuid
+import os
 from pathlib import Path
+
+# Data directory: use /app/data in Docker, or project root /data locally
+DATA_DIR = Path(os.environ.get('DATA_DIR', '/app/data'))
 
 
 def generate_reference_data(n=10000, seed=42):
@@ -61,16 +65,17 @@ def generate_production_data(n_days=30, samples_per_day=500, drift_start_day=14,
 
 
 def seed_all():
-    data_dir = Path(__file__).parent.parent.parent.parent / "data"
-    data_dir.mkdir(exist_ok=True)
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    print(f"Data directory: {DATA_DIR}")
     print("Generating reference data (10,000 samples)...")
     ref = generate_reference_data(10000)
-    ref.to_parquet(data_dir / "reference.parquet", index=False)
+    ref.to_parquet(DATA_DIR / "reference.parquet", index=False)
+    print(f"  ✅ reference.parquet ({len(ref)} rows)")
     print("Generating 30-day production data (drift at day 14)...")
     prod = pd.DataFrame(generate_production_data())
-    prod.to_parquet(data_dir / "production.parquet", index=False)
-    print(f"\n✅ Done! {len(ref)} reference + {len(prod)} production rows.")
-    print("Run: uvicorn app.main:app --reload")
+    prod.to_parquet(DATA_DIR / "production.parquet", index=False)
+    print(f"  ✅ production.parquet ({len(prod)} rows)")
+    print("\n✅ Done! Run: uvicorn app.main:app --reload")
 
 
 if __name__ == "__main__":
