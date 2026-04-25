@@ -2,7 +2,7 @@ services:
   - type: web
     name: ml-monitoring-api
     runtime: python
-    buildCommand: pip install -r backend/requirements.txt && cd backend && python app/core/seed_data.py
+    buildCommand: pip install -r backend/requirements.txt
     startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATA_DIR

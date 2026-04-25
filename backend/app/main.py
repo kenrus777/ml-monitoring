@@ -30,14 +30,33 @@ FEATURES = [
     "merchant_risk", "card_age_days", "unique_merch_24h",
 ]
 
+# Cached dataframes — generated once on first load
+_ref_df = None
+_prod_df = None
+
 
 def load():
+    global _ref_df, _prod_df
+    if _ref_df is not None:
+        return _ref_df, _prod_df
     ref_path = DATA_DIR / "reference.parquet"
     prod_path = DATA_DIR / "production.parquet"
     if not ref_path.exists():
         from app.core.seed_data import seed_all
         seed_all()
-    return pd.read_parquet(ref_path), pd.read_parquet(prod_path)
+    _ref_df = pd.read_parquet(ref_path)
+    _prod_df = pd.read_parquet(prod_path)
+    return _ref_df, _prod_df
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Pre-generate data on startup so first request is fast."""
+    try:
+        load()
+        print("Data loaded successfully")
+    except Exception as e:
+        print(f"Warning: could not pre-load data: {e}")
 
 
 @app.get("/")
