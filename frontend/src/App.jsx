@@ -1,5 +1,5 @@
 import{useState,useEffect,useRef}from'react';import{LineChart,Line,XAxis,YAxis,CartesianGrid,Tooltip,Legend,ResponsiveContainer,ReferenceLine}from'recharts';
-const API='http://localhost:8000',WS='ws://localhost:8000/ws/live';
+const API='',WS=(location.protocol==='https:'?'wss:':'ws:')+'//'+location.host+'/ws/live';
 const C={green:'#00c896',red:'#ef4444',amber:'#fbbf24',blue:'#818cf8',purple:'#a78bfa',bg:'#060810',bg2:'#0c0e1a',bg3:'#111428',border:'#1e2340',text:'#e2e8f0',muted:'#475569'};
 const SC={stable:C.green,warning:C.amber,drift:'#f97316',critical:C.red,healthy:C.green,degraded:C.red};
 const useFetch=url=>{const[d,setD]=useState(null),[l,setL]=useState(true);useEffect(()=>{setL(true);fetch(url).then(r=>r.json()).then(d=>{setD(d);setL(false);}).catch(()=>setL(false));},[url]);return{data:d,loading:l};};

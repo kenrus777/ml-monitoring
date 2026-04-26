@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.core.drift import DriftDetector
 from app.core.performance import PerformanceTracker
 from app.models.schemas import (
@@ -57,11 +58,6 @@ async def startup_event():
         print("Data loaded successfully")
     except Exception as e:
         print(f"Warning: could not pre-load data: {e}")
-
-
-@app.get("/")
-async def root():
-    return {"status": "ok", "version": "1.0.0"}
 
 
 @app.get("/health")
@@ -224,3 +220,9 @@ async def ws_live(websocket: WebSocket):
             ).model_dump(mode="json"))
     except WebSocketDisconnect:
         pass
+
+
+# Serve React SPA — must be last so API routes take precedence
+_static = Path("/app/static")
+if _static.exists():
+    app.mount("/", StaticFiles(directory=str(_static), html=True), name="static")

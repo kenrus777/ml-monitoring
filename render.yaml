@@ -1,11 +1,9 @@
 services:
   - type: web
     name: ml-monitoring-api
-    runtime: python
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    env: docker
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: DATA_DIR
-        value: /opt/render/project/src/data
+        value: /app/data
     healthCheckPath: /health

@@ -1,31 +1,38 @@
+# ── Stage 1: build the React frontend ───────────────────────────────────────
+FROM node:20-slim AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# ── Stage 2: Python backend + pre-built frontend ─────────────────────────────
 FROM python:3.11-slim
 WORKDIR /app
 
-# Install system deps
 RUN apt-get update && apt-get install -y --no-install-recommends gcc && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code
 COPY backend/ .
 
-# Generate seed data into /app/data
+# Copy Vite build output → /app/static (served by FastAPI StaticFiles)
+COPY --from=frontend-builder /app/frontend/dist /app/static
+
+# Generate seed data at build time so first request is instant
 RUN mkdir -p /app/data && python -c "
 import sys
 sys.path.insert(0, '/app')
 from app.core.seed_data import generate_reference_data, generate_production_data
 import pandas as pd
-from pathlib import Path
 print('Generating reference data...')
 ref = generate_reference_data(10000)
 ref.to_parquet('/app/data/reference.parquet', index=False)
 print('Generating production data...')
-import pandas as pd
 prod = pd.DataFrame(generate_production_data())
 prod.to_parquet('/app/data/production.parquet', index=False)
-print(f'Done! {len(ref)} reference + {len(prod)} production rows.')
+print(f'Done: {len(ref)} reference + {len(prod)} production rows.')
 "
 
 EXPOSE 8000
